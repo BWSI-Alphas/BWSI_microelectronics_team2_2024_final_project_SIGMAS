@@ -22,9 +22,10 @@ void setup() {
   while (!Serial)
     continue;
 
-  // Allocate the JSON document
-  // JsonDocument doc;
+  // Initialize the JSON document objects
   doc["camera_on"] = false;
+  doc["servo_x"] = 90;
+  doc["servo_y"] = 90;
 
   //initialize fingerprint sensor
   finger.begin(57600);
@@ -32,7 +33,6 @@ void setup() {
   if (finger.verifyPassword()) {
     // Serial.println("Found fingerprint sensor!");
   } else {
-    // Serial.println("Did not find fingerprint sensor :(");
     while (1) { delay(1); }
   }
 
@@ -43,8 +43,7 @@ void setup() {
   // data.add(2.302038);
 }
 
-  void loop()                     // run over and over again
-{
+void loop() {
   if(getFingerprintIDez() != -1) {
     doc["camera_on"] = true;
   } else {
@@ -54,8 +53,7 @@ void setup() {
   if (doc["camera_on"] == true) {
     serializeJson(doc, Serial);
     Serial.println();
-  }
-  
+  } 
 }
 
 // returns -1 if failed, otherwise returns ID #
