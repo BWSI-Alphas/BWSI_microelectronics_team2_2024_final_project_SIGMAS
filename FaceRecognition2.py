@@ -10,10 +10,10 @@ def face_confidence(face_distance, face_match_threshold=0.6):
     linear_val = (1.0 - face_distance) / (range * 2.0)
     
     if face_distance > face_match_threshold:
-        return str(round(linear_val * 100, 2)) + '%'
+        return round(linear_val * 100, 2)
     else: 
         value = (linear_val + ((1.0 - linear_val) * math.pow((linear_val - 0.5) * 2, 0.2))) * 100
-        return str(round(value, 2)) + '%'
+        return round(value, 2)
     
 class FaceRecognition():
     face_locations = []
@@ -55,7 +55,6 @@ class FaceRecognition():
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
             rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
             
-            # Find all faces
             self.face_locations = face_recognition.face_locations(rgb_small_frame)
             self.face_encodings = face_recognition.face_encodings(rgb_small_frame, self.face_locations)
             
@@ -68,15 +67,17 @@ class FaceRecognition():
                 best_match_index = np.argmin(face_distances)
                 
                 if matches[best_match_index]:
-                    name = self.known_face_names[best_match_index]
                     confidence = face_confidence(face_distances[best_match_index])
-                    recognized = True
+                    if confidence > 90:
+                        name = self.known_face_names[best_match_index]
+                        recognized = True
+                    else:
+                        recognized = False
                     
-                self.face_names.append(f'{name} ({confidence})')
+                self.face_names.append(f'{name} ({confidence}%)')
                 
         self.process_current_frame = not self.process_current_frame
         
-        # Display annotations
         for (top, right, bottom, left), name in zip(self.face_locations, self.face_names):
             top *= 4
             right *= 4
@@ -88,13 +89,15 @@ class FaceRecognition():
             cv2.putText(frame, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255 , 255), 1)
             
         return recognized, frame
+        
+
 
 if __name__ == '__main__':
     currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'
 
     fr = FaceRecognition(currentDir)
     URL = "http://192.168.1.121:81/stream"
-    video_capture = cv2.VideoCapture(URL)
+    video_capture = cv2.VideoCapture(0)
     
     if not video_capture.isOpened():
         sys.exit('Video source not found')
@@ -113,7 +116,7 @@ if __name__ == '__main__':
             frame =  annotated_frame
 
         cv2.imshow('Face Recognition', frame)
-        
+        print(recognized)
         if cv2.waitKey(1) == ord('q'):
             break
 

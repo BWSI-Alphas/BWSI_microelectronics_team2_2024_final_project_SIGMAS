@@ -7,15 +7,44 @@ import json
 import threading
 from FaceRecognition2 import FaceRecognition
 from BodyTracker import process_frame
+import serial
 
 port = "COM5"
-arduino = serial.Serial(port=port, baudrate=9600, timeout=.1)
+ser = serial.Serial(port=port, baudrate=9600, timeout=.1)
+
+camera_on = False
+servo_x = 90
+servo_y = 90
+
+def receive_json_from_arduino():
+    if ser.in_waiting > 0:
+        json_data = ser.readline().decode().strip()
+        try:
+            data = json.loads(json_data)
+            camera_on = data.get('camera_on', False)
+            servo_x = data.get('servo_x', 90)
+            servo_y = data.get('servo_y', 90)
+            print(f"Received from Arduino: {data}")
+            return camera_on, servo_x, servo_y
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            return None, None, None
+
+def send_json(camera_on, servo_x, servo_y):
+    data = {
+        "camera_on": camera_on,
+        "servo_x": servo_x,
+        "servo_y": servo_y
+    }
+    json_data = json.dumps(data)
+    ser.write(json_data.encode())
+    print(f"Sent to Arduino: {json_data}")
 
 def send_servo_command(servo, angle):
     try:
         data = {"servo": servo, "angle": angle}
         command = json.dumps(data) + '\n'
-        arduino.write(command.encode())
+        ser.write(command.encode())
         time.sleep(0.05)  # Delay to prevent buffer overflow
     except Exception as e:
         print(f"Error sending servo command: {e}")
@@ -69,30 +98,31 @@ try:
     capture_thread.start()
 
     frame_counter = 0
+    
+    time.sleep(2)
 
     while True:
-        if frame_queue:
-            frame = frame_queue.pop(0)
+        while camera_on:
+            if frame_queue:
+                frame = frame_queue.pop(0)
 
-            center_x, center_y = process_frame(frame, ws, hs)
-            if center_x is not None and center_y is not None:
-                control_servos(center_x, center_y, ws, hs)
-            else:
-                control_servos(90, 90, ws, hs)
-            frame_counter += 1
+                center_x, center_y = process_frame(frame, ws, hs)
+                if center_x is not None and center_y is not None:
+                    control_servos(center_x, center_y, ws, hs)
+                else:
+                    control_servos(90, 90, ws, hs)
 
-            if frame_counter % 1 == 0:
                 recognized, annotated_frame = fr.process_frame(frame)
                 frame = annotated_frame
 
-            cv2.imshow('Face Recognition', frame)
+                cv2.imshow('Face Recognition', frame)
 
-        if cv2.waitKey(1) == ord('q'):
-            break
+            if cv2.waitKey(1) == ord('q'):
+                break
 
-    cap.release()
-    cv2.destroyAllWindows()
-    capture_thread.join()  # Ensure the capture thread is cleaned up
+        cap.release()
+        cv2.destroyAllWindows()
+        capture_thread.join()  # Ensure the capture thread is cleaned up
 
 except Exception as e:
     print(f"An error occurred: {e}")
