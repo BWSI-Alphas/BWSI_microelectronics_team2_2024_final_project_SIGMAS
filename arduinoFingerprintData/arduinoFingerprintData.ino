@@ -48,31 +48,9 @@ void setup() {
 }
 
 void loop() {
-  JsonDocument doc;
-  // // Add an array.
+
   JsonArray data = doc["data"].to<JsonArray>();
   if(getFingerprintIDez() != -1) {
-<<<<<<< Updated upstream:arduinoFingerprintData/arduinoFingerprintData.ino
-    sendDoc["camera_on"] = true;
-  } else {
-    sendDoc["camera_on"] = false;
-  }
-  delay(50);            //don't ned to run this at full speed.
-  if (sendDoc["camera_on"] == true) {
-    serializeJson(sendDoc, Serial);
-    Serial.println();
-  } 
-  if (Serial.available() > 0) { // Check if data is available to read
-    String incomingJson = Serial.readStringUntil('\n'); // read incoming json data
-    deserializeJson(receiveDoc, incomingJson); //deserialize the json data, allows us to work with it
-
-    if(receiveDoc["led"] = "on") {
-      digitalWrite(LED, HIGH); // Set the pin high
-    }
-  } else {
-    digitalWrite(LED, LOW); // Set the pin low
-  }
-=======
     doc["camera_on"] = false;
     data.add("AUTHORIZED");
     
@@ -81,11 +59,11 @@ void loop() {
     data.add("UNAUTHORIZED");
   }
         //don't ned to run this at full speed.
-  
+  delay(50);
   serializeJson(doc, Serial);
   Serial.println();
   
->>>>>>> Stashed changes:sendFingerprintData/sendFingerprintData.ino
+
 }
 
 // returns -1 if failed, otherwise returns ID #
