@@ -1,49 +1,54 @@
-#include <ArduinoJson.h>
+
 #include <Servo.h>
+#include <Wire.h>
+#include <ArduinoJson.h>
 
-const int servoXPin = 9;  // Pin connected to servo X
-const int servoYPin = 10; // Pin connected to servo Y
-
-Servo servoX;
-Servo servoY;
+Servo panServo;
+Servo tiltServo;
+bool stop = false;
+bool turn = false;
 
 void setup() {
-  Serial.begin(9600); // Initialize serial communication
-  servoX.attach(servoXPin); // Attach the servo to the pin
-  servoY.attach(servoYPin); // Attach the servo to the pin
+  Serial.begin(9600);
+  panServo.attach(10);  // Pin 10 for pan servo
+  tiltServo.attach(9); // Pin 9 for tilt servo
+  panServo.write(90);  // Center position
+  tiltServo.write(140); // Center position
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    String jsonString = Serial.readStringUntil('\n');
-    
-    // Create a JSON document
-    DynamicJsonDocument doc(1024);
-
-    // Deserialize the JSON string into the JSON document
-    DeserializationError error = deserializeJson(doc, jsonString);
-
-    if (error) {
-      Serial.print("Failed to parse JSON: ");
-      Serial.println(error.c_str());
-      return;
+  Move the pan servo back and forth
+  if (stop && !turn) { //turn one way
+    if (panServo.read() < 180) {
+      panServo.write(panServo.read() + 1);
+    } else {
+      turn = true;
     }
+  } else if (stop && turn) {
+    if (panServo.read() > 0) {//turn the other
+      panServo.write(panServo.read() - 1);
+    } else {
+      turn=false;
+    }
+  }else{
+    delay(100);
+  }
 
-    // Extract the values from the JSON document
-    String servo = doc["servo"];
-    int angle = doc["angle"];
 
-    // Print the values to the Serial Monitor for debugging
-    Serial.print("Received servo: ");
-    Serial.print(servo);
-    Serial.print(", angle: ");
-    Serial.println(angle);
-
-    // Control the servos based on the received data
-    if (servo == "x") {
-      servoX.write(angle);
-    } else if (servo == "y") {
-      servoY.write(angle);
+  // Check for incoming serial commands
+  if (Serial.available() > 0) {
+    char received = Serial.read();
+    Serial.print("Received command: ");
+    Serial.println(received);
+    if (received == '1') {
+      stop = true;
+      Serial.println("Servo movement resumed");
+    } else if (received == '0') {
+      stop = false;
+      Serial.println("Servo movement stopped");
     }
   }
+
+  
 }
+

@@ -4,6 +4,13 @@ import sys
 import cv2
 import numpy as np
 import math
+import serial
+import time
+import json
+
+arduino = serial.Serial(port='/dev/cu.usbmodem142201', baudrate=9600, timeout=1)  # port is different for windows, change to com5
+time.sleep(2)
+
 
 def face_confidence(face_distance, face_match_threshold=0.6):
     range = 1.0 - face_match_threshold  
@@ -93,30 +100,48 @@ class FaceRecognition():
 
 
 if __name__ == '__main__':
-    currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'
+    currentDir = '/Users/joy/Desktop/face_detection/faces' #change directory
 
     fr = FaceRecognition(currentDir)
-    URL = "http://192.168.1.121:81/stream"
+    URL = "http://192.168.86.41:81/stream" #change stream 
     video_capture = cv2.VideoCapture(0)
     
     if not video_capture.isOpened():
         sys.exit('Video source not found')
+
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     
-    frame_counter = 0
     
     while True:
         ret, frame = video_capture.read()
         if not ret:
             break
 
-        frame_counter += 1
+        
+        recognized, annotated_frame = fr.process_frame(frame)
+        frame =  annotated_frame
+        if not recognized:
+                # Fall back to Haar cascade for face detection
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
 
-        if frame_counter % 1 == 0:
-            recognized, annotated_frame = fr.process_frame(frame)
-            frame =  annotated_frame
-
-        cv2.imshow('Face Recognition', frame)
-        print(recognized)
+                for (x, y, w, h) in faces:
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+                    arduino.write("0".encode())
+                    print("Person detected")
+                   
+                
+                if len(faces) == 0:
+                    arduino.write("1".encode())
+                    print("No person detected")
+                   
+                
+                annotated_frame = frame
+                cv2.imshow('Face Recognition', annotated_frame)
+        if recognized:
+            arduino.write("0".encode())
+            print("Recognized person detected")
+            cv2.imshow('Face Recognition', frame)
         if cv2.waitKey(1) == ord('q'):
             break
 
