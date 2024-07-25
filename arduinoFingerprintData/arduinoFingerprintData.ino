@@ -4,7 +4,7 @@
 
 //define serial for fingerprint
 #if (defined(__AVR__) || defined(ESP8266)) && !defined(__AVR_ATmega2560__)
-SoftwareSerial mySerial(10, 11);
+SoftwareSerial mySerial(5, 6); // white wire to 6, green wire to 5
 #else
 #define mySerial Serial1
 #endif
@@ -42,14 +42,17 @@ void setup() {
   }
 
   finger.getTemplateCount();
-  // // Add an array.
-  // JsonArray data = doc["data"].to<JsonArray>();
-  // data.add(48.756080);
-  // data.add(2.302038);
+
+
+  
 }
 
 void loop() {
+  JsonDocument doc;
+  // // Add an array.
+  JsonArray data = doc["data"].to<JsonArray>();
   if(getFingerprintIDez() != -1) {
+<<<<<<< Updated upstream:arduinoFingerprintData/arduinoFingerprintData.ino
     sendDoc["camera_on"] = true;
   } else {
     sendDoc["camera_on"] = false;
@@ -69,6 +72,20 @@ void loop() {
   } else {
     digitalWrite(LED, LOW); // Set the pin low
   }
+=======
+    doc["camera_on"] = false;
+    data.add("AUTHORIZED");
+    
+  } else {
+    doc["camera_on"] = true;
+    data.add("UNAUTHORIZED");
+  }
+        //don't ned to run this at full speed.
+  
+  serializeJson(doc, Serial);
+  Serial.println();
+  
+>>>>>>> Stashed changes:sendFingerprintData/sendFingerprintData.ino
 }
 
 // returns -1 if failed, otherwise returns ID #

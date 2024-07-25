@@ -2,7 +2,8 @@ import serial
 import json
 
 # Configuration
-SERIAL_PORT = 'COM3'
+# SERIAL_PORT = 'COM3'
+SERIAL_PORT = '/dev/cu.usbmodem142201'
 BAUD_RATE = 9600
 TIMEOUT = 1  # Timeout in seconds
 
