@@ -20,15 +20,12 @@ def read_serial_data(port, baud_rate, timeout):
                     json_data = json.loads(data)
                     print("Received JSON:", json_data)
                     
-                    # Modify JSON data if needed
-                    json_data["led"] = "on"
-                    
                     # Encode JSON data to string
                     json_string = json.dumps(json_data)
                     
                     # Send modified JSON string back to Arduino
                     ser.write((json_string + "\n").encode('utf-8'))
-                    print("Sent JSON:", json_string)
+
 
     except serial.SerialException as e:
         print(f"Error: {e}")

@@ -13,14 +13,11 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 //define variables
 int fingerprint_data;
 
-const int LED = 8;
 
 //define JSON documents; one for sending and one for receiving data
-JsonDocument sendDoc, receiveDoc;
+JsonDocument doc;
 
 void setup() {
-  
-  pinMode(LED, OUTPUT);
 
   // Initialize Serial port
   Serial.begin(9600);
@@ -28,9 +25,7 @@ void setup() {
     continue;
 
   // Initialize the JSON document objects
-  sendDoc["camera_on"] = false;
-  sendDoc["servo_x"] = 90;
-  sendDoc["servo_y"] = 90;
+  doc["camera_on"] = false;
 
   //initialize fingerprint sensor
   finger.begin(57600);
@@ -42,9 +37,6 @@ void setup() {
   }
 
   finger.getTemplateCount();
-
-
-  
 }
 
 void loop() {
@@ -62,8 +54,7 @@ void loop() {
   delay(50);
   serializeJson(doc, Serial);
   Serial.println();
-  
-
+ 
 }
 
 // returns -1 if failed, otherwise returns ID #
