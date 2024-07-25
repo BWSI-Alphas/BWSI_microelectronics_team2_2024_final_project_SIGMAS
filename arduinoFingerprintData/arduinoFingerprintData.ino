@@ -40,7 +40,6 @@ void setup() {
 }
 
 void loop() {
-
   JsonArray data = doc["data"].to<JsonArray>();
   if(getFingerprintIDez() != -1) {
     doc["camera_on"] = false;
