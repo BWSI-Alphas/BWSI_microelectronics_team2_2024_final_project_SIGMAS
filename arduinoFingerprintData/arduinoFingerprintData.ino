@@ -13,10 +13,15 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 //define variables
 int fingerprint_data;
 
+const int LED = 8;
+
 //define JSON document
 JsonDocument doc;
 
 void setup() {
+  
+  pinMode(LED, OUTPUT);
+
   // Initialize Serial port
   Serial.begin(9600);
   while (!Serial)
@@ -54,6 +59,17 @@ void loop() {
     serializeJson(doc, Serial);
     Serial.println();
   } 
+  if (Serial.available() > 0) { // Check if data is available to read
+    String message = Serial.readStringUntil('\n'); // Read the incoming message until a newline character
+
+    message.trim(); // Remove any leading/trailing whitespace
+
+    if (message == "Message Received") { // Check if the message matches
+      digitalWrite(LED, HIGH); // Set the pin high
+    }
+  } else {
+    digitalWrite(LED, LOW); // Set the pin low
+  }
 }
 
 // returns -1 if failed, otherwise returns ID #

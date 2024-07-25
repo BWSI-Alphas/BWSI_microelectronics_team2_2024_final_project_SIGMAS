@@ -14,7 +14,7 @@ def read_serial_data(port, baud_rate, timeout):
             while True:
                 if ser.in_waiting > 0:  # Check if there's any data in the buffer
                     data = ser.readline().decode('utf-8').strip()  # Read a line of data
-                    print(f"Received: {data}")
+                    ser.write(b"Message Received\n")
 
     except serial.SerialException as e:
         print(f"Error: {e}")
