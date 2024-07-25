@@ -1,6 +1,8 @@
 //libraries
-#include <ArduinoJson.h>
-#include <Adafruit_Fingerprint.h>
+#include <Servo.h>// servos
+#include <Wire.h> // servos
+#include <ArduinoJson.h>// comm
+#include <Adafruit_Fingerprint.h>// fingerprint sensor
 
 //define serial for fingerprint
 #if (defined(__AVR__) || defined(ESP8266)) && !defined(__AVR_ATmega2560__)
