@@ -15,8 +15,8 @@ int fingerprint_data;
 
 const int LED = 8;
 
-//define JSON document
-JsonDocument doc;
+//define JSON documents; one for sending and one for receiving data
+JsonDocument sendDoc, receiveDoc;
 
 void setup() {
   
@@ -28,9 +28,9 @@ void setup() {
     continue;
 
   // Initialize the JSON document objects
-  doc["camera_on"] = false;
-  doc["servo_x"] = 90;
-  doc["servo_y"] = 90;
+  sendDoc["camera_on"] = false;
+  sendDoc["servo_x"] = 90;
+  sendDoc["servo_y"] = 90;
 
   //initialize fingerprint sensor
   finger.begin(57600);
@@ -50,21 +50,20 @@ void setup() {
 
 void loop() {
   if(getFingerprintIDez() != -1) {
-    doc["camera_on"] = true;
+    sendDoc["camera_on"] = true;
   } else {
-    doc["camera_on"] = false;
+    sendDoc["camera_on"] = false;
   }
   delay(50);            //don't ned to run this at full speed.
-  if (doc["camera_on"] == true) {
-    serializeJson(doc, Serial);
+  if (sendDoc["camera_on"] == true) {
+    serializeJson(sendDoc, Serial);
     Serial.println();
   } 
   if (Serial.available() > 0) { // Check if data is available to read
-    String message = Serial.readStringUntil('\n'); // Read the incoming message until a newline character
+    String incomingJson = Serial.readStringUntil('\n'); // read incoming json data
+    deserializeJson(receiveDoc, incomingJson); //deserialize the json data, allows us to work with it
 
-    message.trim(); // Remove any leading/trailing whitespace
-
-    if (message == "Message Received") { // Check if the message matches
+    if(receiveDoc["led"] = "on") {
       digitalWrite(LED, HIGH); // Set the pin high
     }
   } else {
