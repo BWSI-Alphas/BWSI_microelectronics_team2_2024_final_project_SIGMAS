@@ -30,7 +30,7 @@ int fingerprint_data;
 unsigned long previousMillis = 0;
 const long interval = 1000;  // interval at which to trigger (milliseconds)
 
-JsonDocument sendDoc, receiveDoc;
+StaticJsonDocument<200> sendDoc, receiveDoc;
 
 void setup() {
   Serial.begin(9600); // Initialize serial communication for debugging
@@ -50,7 +50,7 @@ void setup() {
   finger.getTemplateCount();
   //initialize fingerprint sensor
   
-  sendDoc["led"] == "off";
+  sendDoc["led"] = "off";
   
 }
 
@@ -61,58 +61,57 @@ void loop() {
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
 
-    if(!onceTurnOnCam&&ultraSonic()){
+    if(!onceTurnOnCam && ultraSonic()){
       turnOnCam = ultraSonic();
       onceTurnOnCam = true;
     }
-  
   }
+
   if(turnOnCam){
     sendDoc["person"] = "detected";
     if(getFingerprintIDez() != -1) {
       sendDoc["status"] = "AUTHORIZED";
-    }else {
+    } else {
       sendDoc["status"] = "UNAUTHORIZED";
+    }
+    serializeJson(sendDoc, Serial);
+    Serial.println();
   }
-  }else{
-    sendDoc["person"] = "not detected";
-  }
-  serializeJson(sendDoc, Serial);
-  Serial.println();
 
   if (Serial.available() > 0) { // Check if data is available to read
     String incomingJson = Serial.readStringUntil('\n'); // read incoming json data
     deserializeJson(receiveDoc, incomingJson); //deserialize the json data, allows us to work with it
 
-    if(receiveDoc["led"] = "on") {
+    if (receiveDoc["led"] == "off") {
+      digitalWrite(LED, LOW); // Set the pin low
+    } else {
       digitalWrite(LED, HIGH); // Set the pin high
-    }else {
-    digitalWrite(LED, LOW); // Set the pin low
-  }
-  } 
-}
-
-bool ultraSonic(){
-  // Triggering the ultrasonic sensor
-    digitalWrite(trigPin, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
-
-    // Reading the echo pulse
-    long duration = pulseIn(echoPin, HIGH);
-
-    // Calculating distance in centimeters
-    int distance = duration * 0.034 / 2;
-
-    // Check if distance is less than threshold
-    if (distance < thresholdDistance) {
-      return true; //detects an object, cue to turn on camera stream
-    }else{
-      return false;
     }
+  }
 }
+
+bool ultraSonic() {
+  // Triggering the ultrasonic sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Reading the echo pulse
+  long duration = pulseIn(echoPin, HIGH);
+
+  // Calculating distance in centimeters
+  int distance = duration * 0.034 / 2;
+
+  // Check if distance is less than threshold
+  if (distance < thresholdDistance) {
+    return true; //detects an object, cue to turn on camera stream
+  } else {
+    return false;
+  }
+}
+
 // returns -1 if failed, otherwise returns ID #
 int getFingerprintIDez() {
   uint8_t p = finger.getImage();
