@@ -24,7 +24,7 @@ void setup() {
 
   // Allocate the JSON document
   // JsonDocument doc;
-  doc["Person_verify"] = false;
+  doc["camera_on"] = false;
 
   //initialize fingerprint sensor
   finger.begin(57600);
@@ -46,12 +46,12 @@ void setup() {
   void loop()                     // run over and over again
 {
   if(getFingerprintIDez() != -1) {
-    doc["Person_verify"] = fingerprint_data;
+    doc["camera_on"] = true;
   } else {
-    doc["Person_verify"] = -1;
+    doc["camera_on"] = false;
   }
   delay(50);            //don't ned to run this at full speed.
-  if (doc["Person_verify"] != -1) {
+  if (doc["camera_on"] == true) {
     serializeJson(doc, Serial);
     Serial.println();
   }
