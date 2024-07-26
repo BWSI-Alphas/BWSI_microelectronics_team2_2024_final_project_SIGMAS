@@ -26,12 +26,19 @@ def send_json(camera_on, servo_x, servo_y):
 
 # Initialize the video capture
 URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
-cap = cv2.VideoCapture(URL)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH,  320)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 200)
 time.sleep(2)
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+FRAME_H, FRAME_W = frame.shape[:2]
+CENTER_X = int(FRAME_W / 2 + 0.5)
+CENTER_Y = int(FRAME_H / 2 + 0.5)
+
+clock = time.clock
+
 
 while True:
     # Capture frame-by-frame
@@ -39,10 +46,6 @@ while True:
     if not ret:
         print("Error getting image")
         continue
-
-    FRAME_H, FRAME_W = frame.shape[:2]
-    CENTER_X = FRAME_W // 2
-    CENTER_Y = FRAME_H // 2
 
     # Convert to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
