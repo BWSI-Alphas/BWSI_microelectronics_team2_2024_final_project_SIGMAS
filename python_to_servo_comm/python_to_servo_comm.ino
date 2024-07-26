@@ -17,7 +17,7 @@ void setup() {
 }
 
 void loop() {
-  Move the pan servo back and forth
+  //Move the pan servo back and forth
   if (stop && !turn) { //turn one way
     if (panServo.read() < 180) {
       panServo.write(panServo.read() + 1);
