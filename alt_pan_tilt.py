@@ -5,7 +5,7 @@ import serial
 import time
 
 # Initialize serial connection
-ser = serial.Serial(port='/dev/cu.usbmodemF412FA637CD02', baudrate=9600, timeout=1)  # Replace with your actual port
+ser = serial.Serial(port='/dev/cu.usbmodem142201', baudrate=9600, timeout=1)  # Replace with your actual port
 time.sleep(2)  # Allow time for the serial connection to establish
 
 #Pan servo settings
@@ -17,7 +17,7 @@ pulse_pan_max = 180
 # Tilt servo settings
 servo_tilt_ch = 1 #Adjust a lot
 servo_tilt_speed = 0.8
-pulse_tilt_min = 0
+pulse_tilt_min = 90
 pulse_tilt_max = 180
 
 threshold_x = 10 #Num pixels can be from CENTER_X
@@ -30,12 +30,12 @@ dir_y = 1
 servo_pos_x = int(((pulse_pan_max - pulse_pan_min) / 2) + pulse_pan_min)
 servo_pos_y = int(((pulse_tilt_max - pulse_tilt_min) / 2) + pulse_tilt_min)
 
-def send_json(camera_on, servo_x, servo_y):
+detect = False
+def send_json(detect):
     try:
         data = {
-            "camera_on": camera_on,
-            "servo_x": servo_x,
-            "servo_y": servo_y
+            "detect": detect,
+            
         }
         json_data = json.dumps(data) + '\n'  # Ensure newline character for proper serial transmission
         ser.write(json_data.encode())
@@ -47,8 +47,8 @@ def send_json(camera_on, servo_x, servo_y):
         print(f"Unexpected error: {e}")
 
 # Initialize the video capture
-URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
-cap = cv2.VideoCapture(0)
+URL = "http://192.168.86.48:81/stream"  # Change stream URL as needed
+cap = cv2.VideoCapture(URL)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH,  320)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 200)
 time.sleep(2)
@@ -89,39 +89,33 @@ while True:
     if largest_face_bb is not None: 
         print("Face : ", largest_face_bb)
 
-        face_x = largest_face_bb[0] + int((largest_face_bb[2]) / 2 + 0.5)
-        face_y = largest_face_bb[1] + int((largest_face_bb[3]) / 2 + 0.5)
+        # face_x = largest_face_bb[0] + int((largest_face_bb[2]) / 2 + 0.5)
+        # face_y = largest_face_bb[1] + int((largest_face_bb[3]) / 2 + 0.5)
 
-        # Draw a line from the center to center of face
-        cv2.line(frame, (CENTER_X, CENTER_Y), (face_x, face_y), (0, 255, 0), 2)
+        # # Draw a line from the center to center of face
+        # cv2.line(frame, (CENTER_X, CENTER_Y), (face_x, face_y), (0, 255, 0), 2)
 
-        # FIgure out how far awar the face is
+        # # FIgure out how far awar the face is
 
-        diff_x = face_x - CENTER_X
-        if abs(diff_x)<= threshold_x:
-            diff_x = 0
+        # diff_x = face_x - CENTER_X
+        # if abs(diff_x)<= threshold_x:
+        #     diff_x = 0
 
-        diff_y = face_y - CENTER_Y
-        if abs(diff_y)<= threshold_y:
-            diff_y = 0
+        # diff_y = face_y - CENTER_Y
+        # if abs(diff_y)<= threshold_y:
+        #     diff_y = 0
 
-        # Calculate the relative position the servos should move to based on distance
-        mov_x = dir_x * servo_pan_speed * diff_x
-        mov_y = dir_y * servo_tilt_speed * diff_y
+        # servo_pos_x = np.interp(diff_x, [-CENTER_X, CENTER_X], [pulse_pan_min, pulse_pan_max])
+        # servo_pos_y = np.interp(diff_y, [-CENTER_Y, CENTER_Y], [pulse_tilt_min, pulse_tilt_max])
 
-        # Adjust camera position left/right and up/down
-        servo_pos_x = servo_pos_x + mov_x
-        servo_pos_y = servo_pos_y + mov_y
-
-        # Constrain servo positions to range of servos
-        servo_pos_x = max(servo_pos_x, pulse_pan_min)
-        servo_pos_x = min(servo_pos_x, pulse_pan_max)
-        servo_pos_y = max(servo_pos_y, pulse_pan_min)
-        servo_pos_y = min(servo_pos_y, pulse_pan_max)
+        # # Constrain servo positions to the range of servos
+        # servo_pos_x = max(min(servo_pos_x, pulse_pan_max), pulse_pan_min)
+        # servo_pos_y = max(min(servo_pos_y, pulse_tilt_max), pulse_tilt_min)
         
-        print("Moving to X:", int(servo_pos_x), "Y:", int(servo_pos_y))
+        # print("Moving to X:", int(servo_pos_x), "Y:", int(servo_pos_y))
+        detect = True
+        send_json(detect)
 
-        send_json(True, int(servo_pos_x), int(servo_pos_y))
 
     # Calculate FPS
     frame_count += 1
