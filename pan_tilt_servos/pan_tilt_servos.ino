@@ -21,6 +21,16 @@ void loop() {
     Serial.println(tiltAngle);
     delay(50);
    }
+   for(int panAngle = 180; panAngle >=0; panAngle--){
+    pan.write(panAngle);
+    Serial.println(panAngle);
+    delay(50);
+  }
+  for(int tiltAngle = 180; tiltAngle >=90; tiltAngle--){
+    tilt.write(tiltAngle);
+    Serial.println(tiltAngle);
+    delay(50);
+   }
   
 
 }
