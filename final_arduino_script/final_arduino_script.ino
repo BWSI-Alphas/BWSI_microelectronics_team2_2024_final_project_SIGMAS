@@ -15,6 +15,7 @@ Servo tiltServo;
 bool stop = false; //true when a person is detected and servos latch onto the person
 bool turn = false; //boolean for panning servo from 0-180 degrees
 bool turnOnCam;
+bool onceTurnOnSensor = false;
 bool onceTurnOnCam = false;
 
 //define serial for fingerprint
@@ -61,9 +62,9 @@ void loop() {
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
 
-    if(!onceTurnOnCam && ultraSonic()){
+    if(!onceTurnOnSensor && ultraSonic()){
       turnOnCam = ultraSonic();
-      onceTurnOnCam = true;
+      onceTurnOnSensor = true;
     }
   }
 
@@ -71,8 +72,15 @@ void loop() {
     sendDoc["person"] = "detected";
     if(getFingerprintIDez() != -1) {
       sendDoc["status"] = "AUTHORIZED";
+      sendDoc["camera"] = "off";
+      onceTurnOnCam = true;
     } else {
       sendDoc["status"] = "UNAUTHORIZED";
+      if(!onceTurnOnCam){
+        sendDoc["camera"] = "on";
+      }else{
+        sendDoc["camera"] = "off";
+      }
     }
     serializeJson(sendDoc, Serial);
     Serial.println();
