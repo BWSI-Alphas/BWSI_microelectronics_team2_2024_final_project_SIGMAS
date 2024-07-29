@@ -5,42 +5,50 @@ import serial
 import time
 
 # Initialize serial connection
-ser = serial.Serial(port='/dev/cu.usbmodemF412FA637CD02', baudrate=9600, timeout=1)  # Replace with your actual port
+ser = serial.Serial(port='COM5', baudrate=9600, timeout=1)  # Replace with your actual port
 time.sleep(2)  # Allow time for the serial connection to establish
 
-#Pan servo settings
-servo_pan_ch = 1 #Adjust a lot
-servo_pan_speed = 0.8
+# Pan servo settings
+servo_pan_ch = 1  # Adjust as needed
+servo_pan_speed = 0.01
 pulse_pan_min = 0
 pulse_pan_max = 180
 
 # Tilt servo settings
-servo_tilt_ch = 1 #Adjust a lot
-servo_tilt_speed = 0.8
+servo_tilt_ch = 1  # Adjust as needed
+servo_tilt_speed = 0.01
 pulse_tilt_min = 0
 pulse_tilt_max = 180
 
-threshold_x = 10 #Num pixels can be from CENTER_X
-threshold_y = 10 #Num pixels can be from CENTER_Y
+threshold_x = 10  # Num pixels can be from CENTER_X
+threshold_y = 10  # Num pixels can be from CENTER_Y
 
-dir_x = 1
+dir_x = -1
 dir_y = 1
 
 # Initial servo positions
 servo_pos_x = int(((pulse_pan_max - pulse_pan_min) / 2) + pulse_pan_min)
 servo_pos_y = int(((pulse_tilt_max - pulse_tilt_min) / 2) + pulse_tilt_min)
 
+def send_handshake():
+    ser.write(b'handshake\n')
+    response = ser.readline().decode().strip()
+    return response == 'ack'
+
 def send_json(camera_on, servo_x, servo_y):
     try:
-        data = {
-            "camera_on": camera_on,
-            "servo_x": servo_x,
-            "servo_y": servo_y
-        }
-        json_data = json.dumps(data) + '\n'  # Ensure newline character for proper serial transmission
-        ser.write(json_data.encode())
-        print(f"Sent to Arduino: {json_data}")
-        time.sleep(0.05)  # Delay to prevent buffer overflow
+        if send_handshake():
+            data = {
+                "camera_on": camera_on,
+                "servo_x": servo_x,
+                "servo_y": servo_y
+            }
+            json_data = json.dumps(data) + '\n'  # Ensure newline character for proper serial transmission
+            ser.write(json_data.encode())
+            print(f"Sent to Arduino: {json_data}")
+            time.sleep(0.05)  # Delay to prevent buffer overflow
+        else:
+            print("Handshake failed.")
     except serial.SerialException as e:
         print(f"Error sending JSON to Arduino: {e}")
     except Exception as e:
@@ -48,7 +56,7 @@ def send_json(camera_on, servo_x, servo_y):
 
 # Initialize the video capture
 URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(URL)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH,  320)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 200)
 time.sleep(2)
@@ -95,7 +103,7 @@ while True:
         # Draw a line from the center to center of face
         cv2.line(frame, (CENTER_X, CENTER_Y), (face_x, face_y), (0, 255, 0), 2)
 
-        # FIgure out how far awar the face is
+        # Figure out how far away the face is
 
         diff_x = face_x - CENTER_X
         if abs(diff_x)<= threshold_x:
