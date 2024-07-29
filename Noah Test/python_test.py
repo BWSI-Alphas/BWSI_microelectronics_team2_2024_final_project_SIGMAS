@@ -141,6 +141,7 @@ while True:
 
         recognized, annotated_frame = fr.process_frame(frame)
         frame = annotated_frame
+        if recognized: camera = False
 
         FRAME_H, FRAME_W = frame.shape[:2]
         CENTER_X = int(FRAME_W / 2 + 0.5)
