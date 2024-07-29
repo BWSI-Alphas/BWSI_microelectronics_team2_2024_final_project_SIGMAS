@@ -4,11 +4,10 @@
 Servo servoX;
 Servo servoY;
 
-const int HANDSHAKE_DELAY = 1000; // Handshake delay in milliseconds
-const int OSCILLATION_DELAY = 2000; // Oscillation delay in milliseconds
+const int OSCILLATION_DELAY = 10000; // Oscillation delay in milliseconds
 
-bool personFlag = false;
-bool cameraFlag = false;
+bool personFlag = true;
+bool cameraFlag = true;
 bool status = true;
 const int servoXPin = 9; // Pin for servo X
 const int servoYPin = 10; // Pin for servo Y
@@ -29,7 +28,7 @@ void loop() {
   static unsigned long lastUpdateTime = 0;
   unsigned long currentTime = millis();
 
-  if (currentTime - lastUpdateTime >= OSCILLATION_DELAY) {
+  /*if (currentTime - lastUpdateTime >= OSCILLATION_DELAY) {
     lastUpdateTime = currentTime;
 
     // Oscillate values
@@ -38,7 +37,7 @@ void loop() {
     cameraFlag = !cameraFlag;
 
     // Send JSON data
-  }
+  }*/
 
   sendJSON(personFlag, status, cameraFlag);
   

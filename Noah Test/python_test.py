@@ -5,7 +5,7 @@ import time
 import sys
 import numpy as np
 import threading
-#from FaceRecognition2 import FaceRecognition
+from FaceRecognition2 import FaceRecognition
 import os
 import math
 
@@ -112,10 +112,13 @@ def initialize_variables(json_data):
 # Initialize serial communication
 arduino = init_serial(SERIAL_PORT, BAUD_RATE, TIMEOUT)
 time.sleep(2)
+currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'  # Change directory
+fr = FaceRecognition(currentDir)
+time.sleep(2)
 
 # Initialize the video capture
 URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
-cap = cv2.VideoCapture(URL)
+cap = cv2.VideoCapture(0)
 time.sleep(2)
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -135,6 +138,9 @@ while True:
         if not ret:
             print("Error getting image")
             continue
+
+        recognized, annotated_frame = fr.process_frame(frame)
+        frame = annotated_frame
 
         FRAME_H, FRAME_W = frame.shape[:2]
         CENTER_X = int(FRAME_W / 2 + 0.5)
@@ -191,6 +197,7 @@ while True:
             print("Moving to X:", int(servo_pos_x), "Y:", int(servo_pos_y))
 
             send_json(True, int(servo_pos_x), int(servo_pos_y))
+            cv2.waitKey(5)
 
         # Calculate FPS
         frame_count += 1
@@ -203,7 +210,7 @@ while True:
 
         # Display FPS on the frame
         cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
+        
         # Display the video captured
         cv2.imshow('Video', frame)
 
@@ -212,7 +219,9 @@ while True:
             cv2.destroyAllWindows()
             cap.release
             exit()
-        
+            
+            
+    send_json(camera, 90, 90)
     # Release the capture and destroy windows
     cv2.destroyAllWindows()
 
