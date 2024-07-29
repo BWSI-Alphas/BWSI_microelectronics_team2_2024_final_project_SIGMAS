@@ -56,7 +56,7 @@ void loop() {
     for (int i = 180; i >= 0; i -= 5) {
       panServo.write(i);
       delay(50);
-      tiltServo.write(90 + (i / 2));
+      tiltServo.write(180 + (i / 2));
       delay(50);
 
       // Check for serial data during the scan
