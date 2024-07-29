@@ -57,8 +57,6 @@ def send_json(camera_on, servo_x, servo_y):
 # Initialize the video capture
 URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
 cap = cv2.VideoCapture(URL)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH,  320)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 200)
 time.sleep(2)
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
