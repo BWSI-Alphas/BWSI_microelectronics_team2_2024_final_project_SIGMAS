@@ -69,13 +69,10 @@ void loop() {
     camera_on = false;
   }
 
-  sendJSON(camera_on);
-
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     if (input == "handshake") {
       Serial.println("ack");
-    } else {
       StaticJsonDocument<200> doc;
       DeserializationError error = deserializeJson(doc, input);
       if (!error) {
@@ -84,10 +81,8 @@ void loop() {
         int servo_y = doc["servo_y"];
         servoX.write(servo_x);
         servoY.write(servo_y);
-        Serial.println("Servos updated.");
-        
-      } else {
-        Serial.println("Failed to parse JSON.");
+        sendJSON(camera_on);
+        //Serial.println("Servos updated.");
       }
     }
   }

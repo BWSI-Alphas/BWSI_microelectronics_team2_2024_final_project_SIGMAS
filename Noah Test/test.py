@@ -2,15 +2,14 @@ import serial
 import json
 import cv2
 import time
+import sys
 import numpy as np
 import threading
-import queue
 from FaceRecognition2 import FaceRecognition
+import os
+import math
 
-# Global vars
-camera = False
-servo_pos_x = 90
-servo_pos_y = 90
+#Global vars
 
 # Configuration
 SERIAL_PORT = 'COM4'  # Change to your port
@@ -35,12 +34,17 @@ threshold_y = 10  # Num pixels can be from CENTER_Y
 dir_x = -1
 dir_y = 1
 
-# Lock for shared resources
-lock = threading.Lock()
+# Initial servo positions
+servo_pos_x = int(((pulse_pan_max - pulse_pan_min) / 2) + pulse_pan_min)
+servo_pos_y = int(((pulse_tilt_max - pulse_tilt_min) / 2) + pulse_tilt_min)
 
-# Queue for communication
-queue_to_arduino = queue.Queue()
-queue_from_arduino = queue.Queue()
+
+
+def send_handshake():
+    arduino.write(b'handshake\n')
+    response = arduino.readline().decode().strip()
+    return response == 'ack'
+
 
 def init_serial(port, baud_rate, timeout):
     ser = serial.Serial(port=port, baudrate=baud_rate, timeout=timeout)
@@ -49,33 +53,26 @@ def init_serial(port, baud_rate, timeout):
     ser.setDTR(True)  # Raise DTR
     return ser
 
-def send_handshake(arduino):
-    arduino.write(b'handshake\n')
-    response = arduino.readline().decode().strip()
-    return response == 'ack'
-
-def send_json(arduino):
-    global lock
-    while True:
-        try:
-            data = queue_to_arduino.get()
-            with lock:
-                if send_handshake(arduino):
-                    json_data = json.dumps(data) + '\n'  # Ensure newline character for proper serial transmission
-                    arduino.write(json_data.encode())
-                    print(f"Sent to Arduino: {json_data}")
-                    time.sleep(0.05)  # Delay to prevent buffer overflow
-                else:
-                    print("Handshake failed.")
-        except serial.SerialException as e:
-            print(f"Error sending JSON to Arduino: {e}")
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+def send_json(camera_on, servo_x, servo_y):
+    try:
+        data = {
+            "camera": camera_on,
+            "servo_x": servo_x,
+            "servo_y": servo_y
+        }
+        json_data = json.dumps(data) + '\n'  # Ensure newline character for proper serial transmission
+        arduino.write(json_data.encode())
+        print(f"Sent to Arduino: {json_data}")
+        time.sleep(0.05)  # Delay to prevent buffer overflow
+    except serial.SerialException as e:
+        print(f"Error sending JSON to Arduino: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 def receive_json(arduino):
-    global camera, lock
     data_buffer = ""  # Initialize data_buffer
     try:
+        # Perform handshake        
         while True:
             if arduino.in_waiting > 0:
                 data = arduino.read_until(b'\n').decode()
@@ -85,7 +82,8 @@ def receive_json(arduino):
                         json_data = json.loads(data_buffer)
                         print(f"Received from Arduino: {json_data}")
                         data_buffer = ""  # Clear buffer after successful read
-                        queue_from_arduino.put(json_data)
+                        initialize_variables(json_data)
+                        return json_data
                     except json.JSONDecodeError:
                         print("Received invalid JSON data. Continuing to receive...")
                         data_buffer = ""  # Clear buffer if JSON decoding fails
@@ -94,39 +92,49 @@ def receive_json(arduino):
     except Exception as e:
         print(f"Unexpected error: {e}")
 
-def process_video(fr, cap):
-    global camera, servo_pos_x, servo_pos_y, lock
+def initialize_variables(json_data):
+    global person, status, camera
+    # Initialize variables based on the JSON data
+    camera = json_data.get("camera", True)
     
-    # Initialize the video capture
-    URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
-    cap.open(URL)
-    
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    
-    # Variables for FPS calculation
-    fps_start_time = time.time()
-    frame_count = 0
-    
-    while True:
-        if not queue_from_arduino.empty():
-            json_data = queue_from_arduino.get()
-            with lock:
-                camera = json_data.get("camera", camera)
+    # Print or use these variables as neededq
+    print(f"Camera: {camera}")
         
-        if not camera:
-            continue
         
+# Initialize serial communication
+arduino = init_serial(SERIAL_PORT, BAUD_RATE, TIMEOUT)
+receive_json(arduino)
+time.sleep(2)
+currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'  # Change directory
+fr = FaceRecognition(currentDir)
+time.sleep(2)
+
+# Initialize the video capture
+URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
+cap = cv2.VideoCapture(URL)
+time.sleep(2)
+
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+
+# Variables for FPS calculation
+fps_start_time = time.time()
+frame_count = 0
+
+while True:
+    receive_json(arduino)
+    while camera:
+        receive_json(arduino)
         # Capture the frame
         ret, frame = cap.read()
+
         if not ret:
             print("Error getting image")
             continue
 
         recognized, annotated_frame = fr.process_frame(frame)
         frame = annotated_frame
-        if recognized: 
-            with lock:
-                camera = False
+        if recognized: camera = False
 
         FRAME_H, FRAME_W = frame.shape[:2]
         CENTER_X = int(FRAME_W / 2 + 0.5)
@@ -171,22 +179,21 @@ def process_video(fr, cap):
             mov_y = dir_y * servo_tilt_speed * diff_y
 
             # Adjust camera position left/right and up/down
-            with lock:
-                servo_pos_x = servo_pos_x + mov_x
-                servo_pos_y = servo_pos_y + mov_y
+            servo_pos_x = servo_pos_x + mov_x
+            servo_pos_y = servo_pos_y + mov_y
 
-                # Constrain servo positions to range of servos
-                servo_pos_x = max(servo_pos_x, pulse_pan_min)
-                servo_pos_x = min(servo_pos_x, pulse_pan_max)
-                servo_pos_y = max(servo_pos_y, pulse_pan_min)
-                servo_pos_y = min(servo_pos_y, pulse_pan_max)
-                
-                print("Moving to X:", int(servo_pos_x), "Y:", int(servo_pos_y))
+            # Constrain servo positions to range of servos
+            servo_pos_x = max(servo_pos_x, pulse_pan_min)
+            servo_pos_x = min(servo_pos_x, pulse_pan_max)
+            servo_pos_y = max(servo_pos_y, pulse_pan_min)
+            servo_pos_y = min(servo_pos_y, pulse_pan_max)
+            
+            print("Moving to X:", int(servo_pos_x), "Y:", int(servo_pos_y))
 
-                queue_to_arduino.put({"camera": camera, "servo_x": int(servo_pos_x), "servo_y": int(servo_pos_y)})
+            send_json(camera, int(servo_pos_x), int(servo_pos_y))
             cv2.waitKey(5)
         else:
-            queue_to_arduino.put({"camera": camera, "servo_x": int(servo_pos_x), "servo_y": int(servo_pos_y)})
+            send_json(camera, int(servo_pos_x), int(servo_pos_y))
         
         # Calculate FPS
         frame_count += 1
@@ -205,33 +212,10 @@ def process_video(fr, cap):
 
         # Exit on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            with lock:
-                camera = False
-            break
-    
+            camera = False
+            exit()
+            
+            
+    send_json(camera, 90, 90)
     # Release the capture and destroy windows
-    cap.release()
     cv2.destroyAllWindows()
-
-# Initialize serial communication
-arduino = init_serial(SERIAL_PORT, BAUD_RATE, TIMEOUT)
-time.sleep(2)
-currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'  # Change directory
-fr = FaceRecognition(currentDir)
-time.sleep(2)
-
-# Initialize the video capture
-cap = cv2.VideoCapture()
-
-# Start threads
-receive_thread = threading.Thread(target=receive_json, args=(arduino,))
-send_thread = threading.Thread(target=send_json, args=(arduino,))
-video_thread = threading.Thread(target=process_video, args=(fr, cap))
-
-receive_thread.start()
-send_thread.start()
-video_thread.start()
-
-receive_thread.join()
-send_thread.join()
-video_thread.join()
