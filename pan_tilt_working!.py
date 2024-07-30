@@ -5,7 +5,7 @@ import serial
 import time
 
 # Initialize serial connection
-ser = serial.Serial(port='COM5', baudrate=9600, timeout=1)  # Replace with your actual port
+ser = serial.Serial(port='COM4', baudrate=9600, timeout=1)  # Replace with your actual port
 time.sleep(2)  # Allow time for the serial connection to establish
 
 # Pan servo settings

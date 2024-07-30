@@ -28,7 +28,7 @@ void loop() {
   static unsigned long lastUpdateTime = 0;
   unsigned long currentTime = millis();
 
-  /*if (currentTime - lastUpdateTime >= OSCILLATION_DELAY) {
+  if (currentTime - lastUpdateTime >= OSCILLATION_DELAY) {
     lastUpdateTime = currentTime;
 
     // Oscillate values
@@ -37,10 +37,12 @@ void loop() {
     cameraFlag = !cameraFlag;
 
     // Send JSON data
-  }*/
+  }
 
   sendJSON(personFlag, status, cameraFlag);
   
+
+
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     if (input == "handshake") {
@@ -64,7 +66,7 @@ void loop() {
 
 void sendJSON(bool person, bool status, bool camera) {
   StaticJsonDocument<200> jsonDoc;
-  jsonDoc["person"] = person;\
+  jsonDoc["person"] = person;
   jsonDoc["camera"] = camera;
   jsonDoc["status"] = status;
 
