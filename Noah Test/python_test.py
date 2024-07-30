@@ -8,9 +8,17 @@ import threading
 from FaceRecognition2 import FaceRecognition
 import os
 import math
+from twilio.rest import Client
 
 #Global vars
 camera = False
+
+# Your Account SID and Auth Token from twilio.com/console
+account_sid = 'AC4bd3f6ed3f3dca017281ff861f8f1ae4'
+auth_token = 'a18c0c1b8750eb718fdf447164e770c4'
+
+# Create an instance of the Twilio client
+client = Client(account_sid, auth_token)
 
 # Configuration
 SERIAL_PORT = 'COM4'  # Change to your port
@@ -137,7 +145,14 @@ while True:
 
         recognized, annotated_frame = fr.process_frame(frame)
         frame = annotated_frame
-        if recognized: camera = False
+        if recognized: 
+            camera = False
+        else:
+            message = client.messages.create(
+                body='Intruder Detected!',
+                from_='+18775062532',  # Your Twilio phone number
+                to='+13129988056'      # Recipient's phone number | ETHAN WEN's NUMBER :pleading_face:
+            )
 
         FRAME_H, FRAME_W = frame.shape[:2]
         CENTER_X = int(FRAME_W / 2 + 0.5)
