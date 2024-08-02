@@ -10,6 +10,7 @@ import os
 import math
 
 #Global vars
+camera = False
 
 # Configuration
 SERIAL_PORT = 'COM4'  # Change to your port
@@ -63,7 +64,6 @@ def send_json(camera_on, servo_x, servo_y):
         json_data = json.dumps(data) + '\n'  # Ensure newline character for proper serial transmission
         arduino.write(json_data.encode())
         print(f"Sent to Arduino: {json_data}")
-        time.sleep(0.05)  # Delay to prevent buffer overflow
     except serial.SerialException as e:
         print(f"Error sending JSON to Arduino: {e}")
     except Exception as e:
@@ -103,7 +103,6 @@ def initialize_variables(json_data):
         
 # Initialize serial communication
 arduino = init_serial(SERIAL_PORT, BAUD_RATE, TIMEOUT)
-receive_json(arduino)
 time.sleep(2)
 currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'  # Change directory
 fr = FaceRecognition(currentDir)
@@ -111,7 +110,7 @@ time.sleep(2)
 
 # Initialize the video capture
 URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
-cap = cv2.VideoCapture(URL)
+cap = cv2.VideoCapture(0)
 time.sleep(2)
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -122,9 +121,7 @@ fps_start_time = time.time()
 frame_count = 0
 
 while True:
-    receive_json(arduino)
     while camera:
-        receive_json(arduino)
         # Capture the frame
         ret, frame = cap.read()
 
@@ -189,11 +186,7 @@ while True:
             servo_pos_y = min(servo_pos_y, pulse_pan_max)
             
             print("Moving to X:", int(servo_pos_x), "Y:", int(servo_pos_y))
-
-            send_json(camera, int(servo_pos_x), int(servo_pos_y))
-            cv2.waitKey(5)
-        else:
-            send_json(camera, int(servo_pos_x), int(servo_pos_y))
+            
         
         # Calculate FPS
         frame_count += 1
@@ -203,7 +196,12 @@ while True:
             fps_text = f"FPS: {fps:.2f}"
         else:
             fps_text = "FPS: N/A"
-
+            
+        if(send_handshake()):
+            receive_json(arduino)
+            send_json(camera, int(servo_pos_x), int(servo_pos_y))
+            
+        cv2.waitKey(5)
         # Display FPS on the frame
         cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
         
@@ -216,6 +214,10 @@ while True:
             exit()
             
             
-    send_json(camera, 90, 90)
+    if(send_handshake()):
+            receive_json(arduino)
+            send_json(camera, int(servo_pos_x), int(servo_pos_y))
+            
+    cv2.waitKey(5)
     # Release the capture and destroy windows
     cv2.destroyAllWindows()

@@ -68,7 +68,7 @@ class FaceRecognition():
                 
                 if matches[best_match_index]:
                     confidence = face_confidence(face_distances[best_match_index])
-                    if confidence > 90:
+                    if confidence > 96:
                         name = self.known_face_names[best_match_index]
                         recognized = True
                     else:
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
         if frame_counter % 1 == 0:
             recognized, annotated_frame = fr.process_frame(frame)
-            frame =  annotated_frame
+            frame =  frame
 
         cv2.imshow('Face Recognition', frame)
         print(recognized)

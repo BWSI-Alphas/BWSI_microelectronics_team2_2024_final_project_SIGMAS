@@ -114,7 +114,7 @@ time.sleep(2)
 
 # Initialize the video capture
 URL = "http://192.168.1.121:81/stream"  # Change stream URL as needed
-cap = cv2.VideoCapture(URL)
+cap = cv2.VideoCapture(0)
 time.sleep(2)
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
