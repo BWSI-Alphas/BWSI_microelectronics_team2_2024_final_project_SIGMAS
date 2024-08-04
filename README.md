@@ -6,7 +6,7 @@ Utilizes Dlib facial recognition models, motion detection, facial tracking, fing
 ## Materials Used
 HiLetgo ESP32-CAM Camera Module, Optical Fingerprint Module, Mini Pan/Tilt Camera Platform, Ultrasonic Sensor, Arduino Uno.
 ## Issues
-Users may face computational limitations.
+Users may face computational limitations. Code many need changing to ensure serial and wireless communications are functioning.
 ## Special Thanks
 - Dr. Beija Zhang
 - BWSI Microelectronics 2024 TA Staff
